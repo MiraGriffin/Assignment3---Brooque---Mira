@@ -4,7 +4,6 @@ import unittest
 import sys
 sys.setrecursionlimit(10**6)
 
-# Functions
 # Returns an array of, where at index, i, it is the number of 
 # times the the character with ASCII code -- from 1 to 256 i is 
 # featured in the text
@@ -15,7 +14,7 @@ def cnt_freq(text : str) -> List[int]:
         freq[ascii] += 1
     return freq
 
-
+# Data Definitions
 @dataclass(frozen=True)
 class HLeaf:
 	count: int
@@ -28,16 +27,33 @@ class HNode:
     left: HTree
     right: HTree
 
-HTree : TypeAlias = Union [None, HLeaf]
-HTLTree: TypeAlias = Union[None, HNode]
+@dataclass(frozen = True)
+class HTLNode:
+    tree : HTree
+    next : HTList
 
+HTree : TypeAlias = Union [HNode, HLeaf]
+HTList : TypeAlias = Union[HTree, HTLNode]
 
+# Huffman Tree Functions
 def tree_lt(tree_1: HTree, tree_2: HTree) -> bool:
        
        if tree_1.count < tree_2.count or (tree_1.count == tree_2.count and tree_1.char < tree_2.char):
 		        return True
 
-
+# Returns the HTree at index 'i' of 'ht_list'
+def list_ref(ht_list : HTList, i : int) -> Optional[HTree]:
+    match ht_list:
+        case HLeaf() | HNode():
+            if i == 0:
+                return ht_list
+            else:
+                return None
+        case HTLNode(tree, next):
+            if i == 0:
+                return tree
+            else:
+                return list_ref(next, i - 1)
 
 
 class Tests(unittest.TestCase):
@@ -45,6 +61,8 @@ class Tests(unittest.TestCase):
     text2 : str = "ddddddddddddddddccccccccbbbbaaff"
     text3 : str = "ABCD"
     text4 : str = ""
+    htree1 :
+    ht_list1 : HTList = HTLNode(a, HTLNode)
 
     def test_cnt_freq(self):
         self.assertEqual(cnt_freq(self.text1)[95:99],
@@ -54,6 +72,8 @@ class Tests(unittest.TestCase):
         self.assertEqual(cnt_freq(self.text3)[65:70],
                          [1, 1, 1, 1, 0])
         self.assertEqual(cnt_freq(self.text4), [0] * 256)
+
+
 
 
 
