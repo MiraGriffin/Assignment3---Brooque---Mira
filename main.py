@@ -70,8 +70,7 @@ def base_tree_list(text : str) -> HTList:
     freq = cnt_freq(text)
     lst : HTList = HLeaf(freq[255], chr(255))
     for i in range(254, -1, -1):
-        leaf = HLeaf(freq[i], chr(i))
-        lst = HTLNode(leaf, lst)
+        lst = HTLNode(HLeaf(freq[i], chr(i)), lst)
     return lst
 
 # Inserts an HTree into aa properly sorted HTList at the correct
