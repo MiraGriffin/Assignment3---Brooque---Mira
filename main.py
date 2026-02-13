@@ -129,7 +129,8 @@ def coalesce_all(ht_list : HTList) -> HTree:
 
 # Construct a Huffman tree from 's'.
 def string_to_HTree(s : str) -> HTree:
-    treelist = base_tree_list(s)
+    freqs = cnt_freq(s)
+    treelist = base_tree_list(freqs)
     sorted_treelist = initial_tree_sort(treelist)
     return coalesce_all(sorted_treelist)  
 
