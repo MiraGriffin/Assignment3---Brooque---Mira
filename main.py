@@ -15,9 +15,6 @@ def cnt_freq(text : str) -> List[int]:
     return freq
 
 # Data Definitions
-HTree : TypeAlias = Union ['HNode', 'HLeaf']
-HTList : TypeAlias = Union['HTree', 'HTLNode']
-
 @dataclass(frozen=True)
 class HLeaf:
 	count: int
@@ -34,6 +31,9 @@ class HNode:
 class HTLNode:
     tree : HTree
     next : HTList
+
+HTree : TypeAlias = Union [HNode, HLeaf]
+HTList : TypeAlias = Union[HTree, HTLNode]
 
 # Huffman Tree Functions
 def tree_lt(tree_1: HTree, tree_2: HTree) -> bool:
