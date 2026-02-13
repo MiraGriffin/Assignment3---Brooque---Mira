@@ -30,7 +30,7 @@ class HNode:
 @dataclass(frozen = True)
 class HTLNode:
     tree : "HTree"
-    next : HTList
+    next : "HTList"
 
 HTree : TypeAlias = Union [HNode, HLeaf]
 HTList : TypeAlias = Union[HTree, HTLNode]
