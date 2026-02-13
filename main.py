@@ -24,13 +24,13 @@ class HLeaf:
 class HNode:
     count: int
     char: str
-    left: "HTree"
-    right: "HTree"
+    left: HTree
+    right: HTree
 
 @dataclass(frozen = True)
 class HTLNode:
-    tree : "HTree"
-    next : "HTList"
+    tree : HTree
+    next : HTList
 
 HTree : TypeAlias = Union [HNode, HLeaf]
 HTList : TypeAlias = Union[HTree, HTLNode]
