@@ -101,18 +101,24 @@ def initial_tree_sort(ht_list : HTList) -> HTList:
 # Returns an HTList where the first two nodes of 'ht_list'-- if it is of length two 
 #  or more-- are combined into an HNode
 def coalesce_once(ht_list : HTList) -> HTList:
-     match ht_list:
+    def min_leaf_char(tree : HTree) -> str:
+        match tree:
+            case HLeaf(_, char):
+                return char
+            case HNode(_, _, left, right):
+                return min(min_leaf_char(left), min_leaf_char(right))
+    match ht_list:
         case HLeaf() | HNode():
             return ht_list
         case HTLNode(tree, next) if isinstance(next, (HLeaf, HNode)):
             h_node : HNode = HNode(count = tree.count + next.count,
-                           char = min(str(tree.char), str(next.char)),
+                           char = min(min_leaf_char(tree), min_leaf_char(next)),
                            left = tree,
                            right = next)
             return h_node
         case HTLNode(tree, HTLNode(next, rest)):
             h_node : HNode = HNode(count = tree.count + next.count,
-                           char = min(str(tree.char), str(next.char)),
+                           char = min(min_leaf_char(tree), min_leaf_char(next)),
                            left = tree,
                            right = next)
             return tree_list_insert(rest, h_node)
