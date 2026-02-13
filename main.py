@@ -216,12 +216,17 @@ class Tests(unittest.TestCase):
 
 
     leaf_a : HLeaf = HLeaf(5, 'a')
+    tree_a : HTree = HLeaf(5, 'a')
     leaf_b2 : HLeaf = HLeaf(5, 'a')
     leaf_b : HLeaf = HLeaf(7, 'b')
+    tree_b : HTree = HLeaf(7, 'b')
     leaf_c : HLeaf = HLeaf(10, 'c')
+    tree_c : HTree = HLeaf(10, 'c')
     leaf_d : HLeaf = HLeaf(11, 'd')
+    tree_d2 : HTree = HLeaf(11, 'd')
     list_d : HTList = HLeaf(11, 'd')
     leaf_e : HLeaf = HLeaf(3, 'e')
+    tree_e2 : HTree = HLeaf(3, 'e')
     tree_d : HTree = HLeaf(12, 'd')
     tree_e : HTree = HLeaf(4, 'e')
 
@@ -288,19 +293,19 @@ class Tests(unittest.TestCase):
         self.assertEqual(initial_tree_sort(self.list_d), self.list_d)
        
     def test_coalesce_once(self):
-        self.assertEqual(list_ref(self.result3, 0), self.leaf_c)
-        self.assertEqual(list_ref(self.result3, 1), HNode(12, 'a', self.leaf_a, self.leaf_b))
-        self.assertEqual(self.result4, HNode(12, 'a', self.leaf_a, self.leaf_b))
+        self.assertEqual(list_ref(self.result3, 0), self.tree_c)
+        self.assertEqual(list_ref(self.result3, 1), HNode(12, 'a', self.tree_a, self.tree_b))
+        self.assertEqual(self.result4, HNode(12, 'a', self.tree_a, self.tree_b))
 
     def test_coalesce_all(self):
-        self.assertEqual(coalesce_all(self.tree_lst1), HNode(22, 'a', self.leaf_c,
-                                                          HNode( 12, 'a', self.leaf_a, 
-                                                                self.leaf_b)))
-        self.assertEqual(coalesce_all(self.tree_lst4), HNode(12, 'a', self.leaf_a, self.leaf_b))
+        self.assertEqual(coalesce_all(self.tree_lst1), HNode(22, 'a', self.tree_c,
+                                                          HNode( 12, 'a', self.tree_a, 
+                                                                self.tree_b)))
+        self.assertEqual(coalesce_all(self.tree_lst4), HNode(12, 'a', self.tree_a, self.tree_b))
         self.assertEqual(coalesce_all(self.tree_lst3), HNode(36, 'a', 
-                                                             HNode(15, 'a', self.leaf_b,
-                                                                    HNode(8, 'a', self.leaf_e, self.leaf_a)),
-                                                                           HNode(21, 'c', self.leaf_c, self.leaf_d)))
+                                                             HNode(15, 'a', self.tree_b,
+                                                                    HNode(8, 'a', self.tree_e2, self.tree_a)),
+                                                                           HNode(21, 'c', self.tree_c, self.tree_d2)))
         
     def test_build_encoder_array(self):
         self.assertEqual(build_encoder_array(self.tree1)[97:100],['10','11','0'])
