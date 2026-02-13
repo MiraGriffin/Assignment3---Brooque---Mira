@@ -99,7 +99,7 @@ def initial_tree_sort(ht_list : HTList) -> HTList:
             
 # Returns an HTList where the first two nodes of 'ht_list'-- if it is of length two 
 #  or more-- are combined into an HNode
-def coalesce_once(ht_list : HTList) -> Union[HTList, HNode]:
+def coalesce_once(ht_list : HTList) -> HTList:
     # Coalesce helper function
     def min_leaf_char(tree : HTree) -> str:
         match tree:
