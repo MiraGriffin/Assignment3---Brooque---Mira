@@ -67,11 +67,11 @@ def list_ref(ht_list : HTList, i : int) -> Optional[HTree]:
 # Returns an HTList of the each character's ASCII code and it's 
 # frequency in 'text'
 def base_tree_list(freq : List[int]) -> HTList:
-    lst : Optional[HTList] = None
-    for i in reversed(range(256)):
-        leaf = HLeaf(freq[i], chr(i))
-        lst = leaf if lst is None else HTLNode(leaf, lst)
+    lst: HTList = HLeaf(freq[255], chr(255))
+    for i in range(254, -1, -1):
+        lst = HTLNode(HLeaf(freq[i], chr(i)), lst)
     return lst
+
 
 # Inserts an HTree into aa properly sorted HTList at the correct
 # location so that it is still sorted correctly
@@ -99,45 +99,42 @@ def initial_tree_sort(ht_list : HTList) -> HTList:
             
 # Returns an HTList where the first two nodes of 'ht_list'-- if it is of length two 
 #  or more-- are combined into an HNode
-def coalesce_once(ht_list : HTList) -> HTList:
-    # Coalesce helper function
-    def min_leaf_char(tree : HTree) -> str:
+def coalesce_once(ht_list: HTList) -> HTList:
+    def min_leaf_char(tree: HTree) -> str:
         match tree:
             case HLeaf(_, char):
                 return char
             case HNode(_, _, left, right):
                 return min(min_leaf_char(left), min_leaf_char(right))
-            
+
     match ht_list:
-        case HLeaf() | HNode():
-            return ht_list
-        
-        case HTLNode(tree, HTLNode(next, rest)):
-            h_node : HNode = HNode(count = tree.count + next.count,
-                           char = min(min_leaf_char(tree), min_leaf_char(next)),
-                           left = tree,
-                           right = next)
-            return tree_list_insert(rest, h_node)
-        
-        case HTLNode(tree, next) if isinstance(next, (HLeaf, HNode)):
-            h_node : HNode = HNode(count = tree.count + next.count,
-                           char = min(min_leaf_char(tree), min_leaf_char(next)),
-                           left = tree,
-                           right = next)
-            return h_node
-        
+        case HTLNode(t1, HTLNode(t2, rest)):
+            new_node = HNode(
+                count=t1.count + t2.count,
+                char=min(min_leaf_char(t1), min_leaf_char(t2)),
+                left=t1,
+                right=t2
+            )
+            # Insert the new_node back into the rest of the list in sorted order
+            return tree_list_insert(rest, new_node)
+        case HTLNode(t1, t2) if isinstance(t2, (HLeaf, HNode)):
+            return HNode(
+                count=t1.count + t2.count,
+                char=min(min_leaf_char(t1), min_leaf_char(t2)),
+                left=t1,
+                right=t2
+            )
         case _:
-            raise ValueError("Invalid HTList Structure")
+            raise ValueError("Invalid HTList for coalescing")
+
+
          
 # Returns an HTList where it recursively combines the first two nodes 'ht_list' --
 # of length 1 or more -- into an HTree until the list only contains one HTree
 def coalesce_all(ht_list : HTList) -> HTree:
-    match ht_list:
-        case HLeaf() | HNode():
-            return ht_list
-        case _:
-            new_list = coalesce_once(ht_list)
-            return coalesce_all(new_list) 
+    while isinstance(ht_list, HTLNode):
+        ht_list = coalesce_once(ht_list)
+    return ht_list  # HLeaf or HNode
 
 # Construct a Huffman tree from 's'.
 def string_to_HTree(s : str) -> HTree:
@@ -185,6 +182,10 @@ def bits_to_bytes(bits : str) -> bytearray:
 def huffman_code_file(source : str, target : str) -> None:
     with open(source, 'r', encoding = 'utf-8') as file:
         text = file.read()
+    if not text:
+        with open(target, 'wb') as file:
+            file.write(bytearray())
+        return
     freq : List[int] = cnt_freq(text)
     base_list : HTList = base_tree_list(freq)
     sorted_list = initial_tree_sort(base_list)
