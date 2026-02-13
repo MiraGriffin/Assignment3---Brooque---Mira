@@ -106,13 +106,13 @@ def coalesce_once(ht_list : HTList) -> HTList:
             return ht_list
         case HTLNode(tree, next) if isinstance(next, (HLeaf, HNode)):
             h_node : HNode = HNode(count = tree.count + next.count,
-                           char = min(tree.char, next.char),
+                           char = min(str(tree.char), str(next.char)),
                            left = tree,
                            right = next)
             return h_node
         case HTLNode(tree, HTLNode(next, rest)):
             h_node : HNode = HNode(count = tree.count + next.count,
-                           char = min(tree.char, next.char),
+                           char = min(str(tree.char), str(next.char)),
                            left = tree,
                            right = next)
             return tree_list_insert(rest, h_node)
@@ -129,8 +129,7 @@ def coalesce_all(ht_list : HTList) -> HTree:
 
 # Construct a Huffman tree from 's'.
 def string_to_HTree(s : str) -> HTree:
-    freqs = cnt_freq(s)
-    treelist = base_tree_list(freqs)
+    treelist = base_tree_list(s)
     sorted_treelist = initial_tree_sort(treelist)
     return coalesce_all(sorted_treelist)  
 
@@ -268,7 +267,7 @@ class Tests(unittest.TestCase):
         self.assertEqual(list_ref(self.result2, 1), self.leaf_b)
         self.assertEqual(list_ref(self.result2, 3), self.tree_d)
 
-    def test_intitial_tree_sort(self):
+    def test_initial_tree_sort(self):
         self.assertEqual(initial_tree_sort(self.unsorted1), self.tree_lst1)
         self.assertEqual(initial_tree_sort(self.unsorted3), self.tree_lst3)
         self.assertEqual(initial_tree_sort(self.list_d), self.list_d)
