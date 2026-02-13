@@ -41,6 +41,14 @@ def tree_lt(tree_1: HTree, tree_2: HTree) -> bool:
        if tree_1.count < tree_2.count or (tree_1.count == tree_2.count and tree_1.char < tree_2.char):
 		        return True
 
+# Returns the length of 'ht_lst'
+def list_len(ht_list: HTList) -> int:
+    match ht_list:
+        case HLeaf() | HNode():
+            return 1
+        case HTLNode(_, next):
+            return 1 + list_len(next)
+
 # Returns the HTree at index 'i' of 'ht_list', if 'i' is a valid
 # index in 'ht_list'
 def list_ref(ht_list : HTList, i : int) -> Optional[HTree]:
@@ -121,9 +129,7 @@ def coalesce_all(ht_list : HTList) -> HTree:
 
 # Construct a Huffman tree from 's'.
 def string_to_HTree(s : str) -> HTree:
-    # chain together the functions required for the task:
-    freqs = cnt_freq(s)
-    treelist = base_tree_list(freqs)
+    treelist = base_tree_list(s)
     sorted_treelist = initial_tree_sort(treelist)
     return coalesce_all(sorted_treelist)  
 
@@ -224,7 +230,14 @@ class Tests(unittest.TestCase):
 
     unsorted1 : HTList = HTLNode(leaf_b, HTLNode(leaf_c, leaf_a))
     unsorted3 : HTList = HTLNode(leaf_d, HTLNode(leaf_a, HTLNode(leaf_e, 
-                                                                 HTLNode(leaf_b, leaf_c))))
+    
+                                                                                                                                HTLNode(leaf_b, leaf_c))))
+    def test_list_len(self):
+        self.assertEqual(list_len(self.tree_lst1), 3)
+        self.assertEqual(list_len(self.tree_lst2), 4)
+        self.assertEqual(list_len(self.tree_lst3), 5)
+        self.assertEqual(list_len(self.tree_lst4), 2)
+
 
     def test_list_ref(self):
         self.assertEqual(list_ref(self.tree_lst1, 0), self.leaf_a)
@@ -289,13 +302,6 @@ class Tests(unittest.TestCase):
         with open("test_target.bin", "rb") as f:
             data = f.read()
         self.assertTrue(len(data) > 0)
-
-
-
-
-
-
-
 
 if (__name__ == '__main__'):
     unittest.main()
