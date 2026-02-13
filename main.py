@@ -37,9 +37,9 @@ class HTLNode:
 
 # Huffman Tree Functions
 def tree_lt(tree_1: HTree, tree_2: HTree) -> bool:
-       
-       if tree_1.count < tree_2.count or (tree_1.count == tree_2.count and tree_1.char < tree_2.char):
-		        return True
+    return (tree_1.count < tree_2.count or 
+            (tree_1.count == tree_2.count and tree_1.char < tree_2.char))
+
 
 # Returns the length of 'ht_lst'
 def list_len(ht_list: HTList) -> int:
@@ -202,6 +202,7 @@ class Tests(unittest.TestCase):
 
 
     leaf_a : HLeaf = HLeaf(5, 'a')
+    leaf_b2 : HLeaf = HLeaf(5, 'a')
     leaf_b : HLeaf = HLeaf(7, 'b')
     leaf_c : HLeaf = HLeaf(10, 'c')
     leaf_d : HLeaf = HLeaf(11, 'd')
@@ -233,6 +234,12 @@ class Tests(unittest.TestCase):
     unsorted3 : HTList = HTLNode(leaf_d, HTLNode(leaf_a, HTLNode(leaf_e, 
     
                                                                                                                                 HTLNode(leaf_b, leaf_c))))
+    def test_tree_lt(self):
+        self.assertTrue(tree_lt(self.leaf_e, self.leaf_a))
+        self.assertFalse(tree_lt(self.leaf_c, self.leaf_b))
+        self.assertFalse(tree_lt(self.leaf_a, self.leaf_b2))
+        self.assertFalse(tree_lt(self.leaf_b, self.leaf_b))
+
     def test_list_len(self):
         self.assertEqual(list_len(self.tree_lst1), 3)
         self.assertEqual(list_len(self.tree_lst2), 4)
