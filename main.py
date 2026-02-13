@@ -99,28 +99,35 @@ def initial_tree_sort(ht_list : HTList) -> HTList:
             
 # Returns an HTList where the first two nodes of 'ht_list'-- if it is of length two 
 #  or more-- are combined into an HNode
-def coalesce_once(ht_list : HTList) -> HTList:
+def coalesce_once(ht_list : HTList) -> Union[HTList, HNode]:
+    # Coalesce helper function
     def min_leaf_char(tree : HTree) -> str:
         match tree:
             case HLeaf(_, char):
                 return char
             case HNode(_, _, left, right):
                 return min(min_leaf_char(left), min_leaf_char(right))
+            
     match ht_list:
         case HLeaf() | HNode():
             return ht_list
-        case HTLNode(tree, next) if isinstance(next, (HLeaf, HNode)):
-            h_node : HNode = HNode(count = tree.count + next.count,
-                           char = min(min_leaf_char(tree), min_leaf_char(next)),
-                           left = tree,
-                           right = next)
-            return h_node
+        
         case HTLNode(tree, HTLNode(next, rest)):
             h_node : HNode = HNode(count = tree.count + next.count,
                            char = min(min_leaf_char(tree), min_leaf_char(next)),
                            left = tree,
                            right = next)
             return tree_list_insert(rest, h_node)
+        
+        case HTLNode(tree, next) if isinstance(next, (HLeaf, HNode)):
+            h_node : HNode = HNode(count = tree.count + next.count,
+                           char = min(min_leaf_char(tree), min_leaf_char(next)),
+                           left = tree,
+                           right = next)
+            return h_node
+        
+        case _:
+            raise ValueError("Invalid HTList Structure")
          
 # Returns an HTList where it recursively combines the first two nodes 'ht_list' --
 # of length 1 or more -- into an HTree until the list only contains one HTree
@@ -145,9 +152,9 @@ def build_encoder_array(h_tree : HTree) -> list[str]:
     encoder = [''] * 256
     def helper(h_tree : HTree, path : str) -> None:
         match h_tree:
-            case HLeaf(count, char):
+            case HLeaf(_, char):
                 encoder[ord(char)] = path
-            case HNode(count, char, left, right):
+            case HNode(_, char, left, right):
                 helper(left, path + '0')
                 helper(right, path + '1')
     helper(h_tree, '')
@@ -179,7 +186,8 @@ def huffman_code_file(source : str, target : str) -> None:
     with open(source, 'r', encoding = 'utf-8') as file:
         text = file.read()
     base_list : HTList = base_tree_list(text)
-    h_tree : HTree = coalesce_all(base_list)
+    sorted_list = initial_tree_sort(base_list)
+    h_tree : HTree = coalesce_all(sorted_list)
     encoder : list[str] = build_encoder_array(h_tree)
     bits : str = encode_string_one(text, encoder)
     b_array : bytearray = bits_to_bytes(bits)
