@@ -66,11 +66,11 @@ def list_ref(ht_list : HTList, i : int) -> Optional[HTree]:
 
 # Returns an HTList of the each character's ASCII code and it's 
 # frequency in 'text'
-def base_tree_list(text : str) -> HTList:
-    freq = cnt_freq(text)
-    lst : HTList = HLeaf(freq[255], chr(255))
-    for i in range(254, -1, -1):
-        lst = HTLNode(HLeaf(freq[i], chr(i)), lst)
+def base_tree_list(freq : List[int]) -> HTList:
+    lst : Optional[HTList] = None
+    for i in reversed(range(256)):
+        leaf = HLeaf(freq[i], chr(i))
+        lst = leaf if lst is None else HTLNode(leaf, lst)
     return lst
 
 # Inserts an HTree into aa properly sorted HTList at the correct
@@ -185,7 +185,8 @@ def bits_to_bytes(bits : str) -> bytearray:
 def huffman_code_file(source : str, target : str) -> None:
     with open(source, 'r', encoding = 'utf-8') as file:
         text = file.read()
-    base_list : HTList = base_tree_list(text)
+    freq : List[int] = cnt_freq(text)
+    base_list : HTList = base_tree_list(freq)
     sorted_list = initial_tree_sort(base_list)
     h_tree : HTree = coalesce_all(sorted_list)
     encoder : list[str] = build_encoder_array(h_tree)
@@ -267,10 +268,10 @@ class Tests(unittest.TestCase):
     
 
     def test_base_tree_list(self):
-        self.assertEqual(list_ref(base_tree_list(self.text1), 97), HLeaf(3, 'a'))
-        self.assertEqual(list_ref(base_tree_list(self.text2), 98), HLeaf(4, 'b'))
-        self.assertEqual(list_ref(base_tree_list(self.text3), 65), HLeaf(1, 'A'))
-        self.assertEqual(list_ref(base_tree_list(self.text4), 97), HLeaf(0, 'a'))
+        self.assertEqual(list_ref(base_tree_list(cnt_freq(self.text1)), 97), HLeaf(3, 'a'))
+        self.assertEqual(list_ref(base_tree_list(cnt_freq(self.text2)), 98), HLeaf(4, 'b'))
+        self.assertEqual(list_ref(base_tree_list(cnt_freq(self.text3)), 65), HLeaf(1, 'A'))
+        self.assertEqual(list_ref(base_tree_list(cnt_freq(self.text4)), 97), HLeaf(0, 'a'))
 
     def test_tree_list_insert(self):
         self.assertEqual(list_ref(self.result1, 0), self.tree_e)
