@@ -15,6 +15,8 @@ def cnt_freq(text : str) -> List[int]:
     return freq
 
 # Data Definitions
+HTree : TypeAlias = Union ["HNode", "HLeaf"]
+
 @dataclass(frozen=True)
 class HLeaf:
 	count: int
@@ -32,8 +34,8 @@ class HTLNode:
     tree : "HTree"
     next : "HTList"
 
-HTree : TypeAlias = Union [HNode, HLeaf]
-HTList : TypeAlias = Union[HTree, HTLNode]
+
+HTList : TypeAlias = Union[HTLNode, None]
 
 # Huffman Tree Functions
 def tree_lt(tree_1: HTree, tree_2: HTree) -> bool:
@@ -44,8 +46,8 @@ def tree_lt(tree_1: HTree, tree_2: HTree) -> bool:
 # Returns the length of 'ht_lst'
 def list_len(ht_list: HTList) -> int:
     match ht_list:
-        case HLeaf() | HNode():
-            return 1
+        case None:
+            return 0
         case HTLNode(_, next):
             return 1 + list_len(next)
 
@@ -53,11 +55,8 @@ def list_len(ht_list: HTList) -> int:
 # index in 'ht_list'
 def list_ref(ht_list : HTList, i : int) -> Optional[HTree]:
     match ht_list:
-        case HLeaf() | HNode():
-            if i == 0:
-                return ht_list
-            else:
-                return None
+        case None:
+            raise IndexError("Index out of bounds")
         case HTLNode(tree, next):
             if i == 0:
                 return tree
@@ -67,22 +66,19 @@ def list_ref(ht_list : HTList, i : int) -> Optional[HTree]:
 # Returns an HTList of the each character's ASCII code and it's 
 # frequency in 'text'
 def base_tree_list(freq : List[int]) -> HTList:
-    lst: HTList = HLeaf(freq[255], chr(255))
-    for i in range(254, -1, -1):
-        lst = HTLNode(HLeaf(freq[i], chr(i)), lst)
-    return lst
+     lst: HTList = HLeaf(freq[255], chr(255))
+     for i in range(254, -1, -1):
+         lst = HTLNode(HLeaf(freq[i], chr(i)), lst)
+     return lst
 
 
 # Inserts an HTree into aa properly sorted HTList at the correct
 # location so that it is still sorted correctly
 def tree_list_insert(ht_list : HTList, htree : HTree) -> HTList:
-    match ht_list:
-        case HLeaf() | HNode():
-            if tree_lt(htree, ht_list):
-                return HTLNode(htree, ht_list)
-            else:
-                return HTLNode(ht_list, htree)
-        case HTLNode(tree, next):
+     match ht_list:
+         case None:
+                return HTLNode(htree, None)
+         case HTLNode(tree, next):
             if tree_lt(htree, tree):
                 return HTLNode(htree, ht_list)
             else:
@@ -91,60 +87,47 @@ def tree_list_insert(ht_list : HTList, htree : HTree) -> HTList:
 # Returns a new sorted version of 'ht_list'
 def initial_tree_sort(ht_list : HTList) -> HTList:
     match ht_list:
-        case HLeaf() | HNode():
-            return ht_list
+        case None:
+             return None
         case HTLNode(tree, next):
             sorted = initial_tree_sort(next)
             return tree_list_insert(sorted, tree)
             
 # Returns an HTList where the first two nodes of 'ht_list'-- if it is of length two 
-#  or more-- are combined into an HNode
-def coalesce_once(ht_list: HTList) -> HTList:
-    def min_leaf_char(tree: HTree) -> str:
-        match tree:
-            case HLeaf(_, char):
-                return char
-            case HNode(_, _, left, right):
-                return min(min_leaf_char(left), min_leaf_char(right))
-
+# or more-- are combined into an HNode
+def coalesce_once(ht_list : HTList) -> HTList:
     match ht_list:
-        case HTLNode(t1, HTLNode(t2, rest)):
-            new_node = HNode(
-                count=t1.count + t2.count,
-                char=min(min_leaf_char(t1), min_leaf_char(t2)),
-                left=t1,
-                right=t2
-            )
-            # Insert the new_node back into the rest of the list in sorted order
-            return tree_list_insert(rest, new_node)
-        case HTLNode(t1, t2) if isinstance(t2, (HLeaf, HNode)):
-            return HNode(
-                count=t1.count + t2.count,
-                char=min(min_leaf_char(t1), min_leaf_char(t2)),
-                left=t1,
-                right=t2
-            )
+        case HTLNode(first, HTLNode(second, next)):
+            if first.char < second.char:
+                new_char = first.char
+            else:
+                new_char = second.char
+            new_node = HNode(first.count + second.count, new_char, first, second)
+            return tree_list_insert(next, new_node)
         case _:
-            raise ValueError("Invalid HTList for coalescing")
-
+            raise ValueError("List must contain two or more HTLNodes")
 
          
 # Returns an HTList where it recursively combines the first two nodes 'ht_list' --
 # of length 1 or more -- into an HTree until the list only contains one HTree
 def coalesce_all(ht_list : HTList) -> HTree:
-    while isinstance(ht_list, HTLNode):
-        ht_list = coalesce_once(ht_list)
-    return ht_list  # HLeaf or HNode
+    match ht_list:
+        case None:
+            raise ValueError("List must contain two or more HTLNodes")
+        case HTLNode(tree, None):
+            return tree
+        case _:
+            return coalesce_all(coalesce_once(ht_list))
 
 # Construct a Huffman tree from 's'.
 def string_to_HTree(s : str) -> HTree:
-    treelist = base_tree_list(s)
+    treelist = base_tree_list(cnt_freq(s))
     sorted_treelist = initial_tree_sort(treelist)
     return coalesce_all(sorted_treelist)  
 
 # Creates an array from 'h_tree' where each value in the array has a string of 0's--
 # that represents lefts-- and 1's -- that represents rights-- to show the characters
-# location in the tree, and the index of the array corresponds to the characters ASCII code
+# ocation in the tree, and the index of the array corresponds to the characters ASCII code
 def build_encoder_array(h_tree : HTree) -> list[str]:
     encoder = [''] * 256
     def helper(h_tree : HTree, path : str) -> None:
@@ -224,17 +207,16 @@ class Tests(unittest.TestCase):
     tree_c : HTree = HLeaf(10, 'c')
     leaf_d : HLeaf = HLeaf(11, 'd')
     tree_d2 : HTree = HLeaf(11, 'd')
-    list_d : HTList = HLeaf(11, 'd')
     leaf_e : HLeaf = HLeaf(3, 'e')
     tree_e2 : HTree = HLeaf(3, 'e')
     tree_d : HTree = HLeaf(12, 'd')
     tree_e : HTree = HLeaf(4, 'e')
 
-    tree_lst1 : HTList = HTLNode(leaf_a, HTLNode(leaf_b, leaf_c))
-    tree_lst2 : HTList = HTLNode(leaf_a, HTLNode(leaf_b, HTLNode(tree_d, tree_e)))
+    tree_lst1 : HTList = HTLNode(leaf_a, HTLNode(leaf_b, None))
+    tree_lst2 : HTList = HTLNode(leaf_a, HTLNode(leaf_b, HTLNode(leaf_d, None)))
     tree_lst3 : HTList = HTLNode(leaf_e, HTLNode(leaf_a, HTLNode(leaf_b, 
-                                 HTLNode(leaf_c, leaf_d))))
-    tree_lst4 : HTList = HTLNode(leaf_a, leaf_b)
+                                 HTLNode(leaf_c, None))))
+    tree_lst4 : HTList = HTLNode(leaf_a, None)
 
     tree1 : HTree = HNode(22, 'a', leaf_c, HNode( 12, 'a', leaf_a, leaf_b))
     tree2 : HTree = HNode(12, 'a', leaf_a, leaf_b)
@@ -244,15 +226,11 @@ class Tests(unittest.TestCase):
     
 
 
-    result1 = tree_list_insert(tree_lst1, tree_e)
-    result2 = tree_list_insert(tree_lst1, tree_d)
-    result3 = coalesce_once(tree_lst1)
-    result4 = coalesce_once(tree_lst4)
+    unsorted1 : HTList = HTLNode(leaf_b, HTLNode(leaf_c, HTLNode(leaf_a, None)))
+    unsorted2 : HTList = HTLNode(leaf_d, HTLNode(leaf_a, HTLNode(leaf_e, None)))
+    unsorted3 : HTList = HTLNode(leaf_b, HTLNode(leaf_e, HTLNode(leaf_c, None)))
+    unsorted4 : HTList = HTLNode(leaf_d, None)
 
-    unsorted1 : HTList = HTLNode(leaf_b, HTLNode(leaf_c, leaf_a))
-    unsorted3 : HTList = HTLNode(leaf_d, HTLNode(leaf_a, HTLNode(leaf_e, 
-    
-                                                                                                                                HTLNode(leaf_b, leaf_c))))
     def test_tree_lt(self):
         self.assertTrue(tree_lt(self.leaf_e, self.leaf_a))
         self.assertFalse(tree_lt(self.leaf_c, self.leaf_b))
@@ -260,75 +238,96 @@ class Tests(unittest.TestCase):
         self.assertFalse(tree_lt(self.leaf_b, self.leaf_b))
 
     def test_list_len(self):
-        self.assertEqual(list_len(self.tree_lst1), 3)
-        self.assertEqual(list_len(self.tree_lst2), 4)
-        self.assertEqual(list_len(self.tree_lst3), 5)
-        self.assertEqual(list_len(self.tree_lst4), 2)
-
-
-    def test_list_ref(self):
-        self.assertEqual(list_ref(self.tree_lst1, 0), self.leaf_a)
-        self.assertEqual(list_ref(self.tree_lst1, 1), self.leaf_b)
-        self.assertEqual(list_ref(self.tree_lst1, 2), self.leaf_c)
-        self.assertEqual(list_ref(self.tree_lst1, 3), None)
-    
+        self.assertEqual(list_len(self.tree_lst1), 2)
+        self.assertEqual(list_len(self.tree_lst2), 3)
+        self.assertEqual(list_len(self.tree_lst3), 4)
+        self.assertEqual(list_len(self.tree_lst4), 1)
 
     def test_base_tree_list(self):
-        self.assertEqual(list_ref(base_tree_list(cnt_freq(self.text1)), 97), HLeaf(3, 'a'))
-        self.assertEqual(list_ref(base_tree_list(cnt_freq(self.text2)), 98), HLeaf(4, 'b'))
-        self.assertEqual(list_ref(base_tree_list(cnt_freq(self.text3)), 65), HLeaf(1, 'A'))
-        self.assertEqual(list_ref(base_tree_list(cnt_freq(self.text4)), 97), HLeaf(0, 'a'))
+       self.assertEqual(list_ref(base_tree_list(cnt_freq(self.text1)), 97), HLeaf(3, 'a'))
+       self.assertEqual(list_ref(base_tree_list(cnt_freq(self.text2)), 98), HLeaf(4, 'b'))
+       self.assertEqual(list_ref(base_tree_list(cnt_freq(self.text3)), 65), HLeaf(1, 'A'))
+       self.assertEqual(list_ref(base_tree_list(cnt_freq(self.text4)), 97), HLeaf(0, 'a'))
 
     def test_tree_list_insert(self):
-        self.assertEqual(list_ref(self.result1, 0), self.tree_e)
-        self.assertEqual(list_ref(self.result1, 1), self.leaf_a)
-        self.assertEqual(list_ref(self.result1, 2), self.leaf_b)
-        self.assertEqual(list_ref(self.result2, 0), self.leaf_a)
-        self.assertEqual(list_ref(self.result2, 1), self.leaf_b)
-        self.assertEqual(list_ref(self.result2, 3), self.tree_d)
-
+        self.assertEqual(tree_list_insert(self.tree_lst1, self.leaf_c),
+                         HTLNode(self.leaf_a, 
+                                 HTLNode(self.leaf_b, 
+                                         HTLNode(self.leaf_c, None))))
+        self.assertEqual(tree_list_insert(self.tree_lst2, self.leaf_e),
+                         HTLNode(self.leaf_e, 
+                                 HTLNode(self.leaf_a,
+                                          HTLNode(self.leaf_b,
+                                                   HTLNode(self.leaf_d, None)))))
+        self.assertEqual(tree_list_insert(self.tree_lst3, self.leaf_d),
+                         HTLNode(self.leaf_e, 
+                                 HTLNode(self.leaf_a, 
+                                         HTLNode(self.leaf_b, 
+                                                 HTLNode(self.leaf_c, 
+                                                         HTLNode(self.leaf_d, None))))))
+        
     def test_initial_tree_sort(self):
-        self.assertEqual(initial_tree_sort(self.unsorted1), self.tree_lst1)
-        self.assertEqual(initial_tree_sort(self.unsorted3), self.tree_lst3)
-        self.assertEqual(initial_tree_sort(self.list_d), self.list_d)
-       
+        self.assertEqual(initial_tree_sort(self.unsorted1),
+                             HTLNode(self.leaf_a, 
+                                    HTLNode(self.leaf_b, 
+                                         HTLNode(self.leaf_c, None))))
+        self.assertEqual(initial_tree_sort(self.unsorted2),
+                             HTLNode(self.leaf_e, 
+                                    HTLNode(self.leaf_a, 
+                                         HTLNode(self.leaf_d, None))))
+        self.assertEqual(initial_tree_sort(self.unsorted3),
+                             HTLNode(self.leaf_e, 
+                                    HTLNode(self.leaf_b, 
+                                         HTLNode(self.leaf_c, None))))
+        self.assertEqual(initial_tree_sort(self.unsorted4),
+                             HTLNode(self.leaf_d, None))
+        
     def test_coalesce_once(self):
-        self.assertEqual(list_ref(self.result3, 0), self.tree_c)
-        self.assertEqual(list_ref(self.result3, 1), HNode(12, 'a', self.tree_a, self.tree_b))
-        self.assertEqual(self.result4, HNode(12, 'a', self.tree_a, self.tree_b))
+        self.assertEqual(coalesce_once(self.tree_lst1), HTLNode(HNode(12,'a', self.leaf_a, self.leaf_b), None))
+        self.assertEqual(coalesce_once(self.tree_lst2), HTLNode(self.leaf_d, 
+                                                                HTLNode(
+                                                                    HNode(12,'a', self.leaf_a, self.leaf_b), None)))
+        self.assertEqual(coalesce_once(self.tree_lst3), HTLNode(self.leaf_b, 
+                                                                HTLNode(
+                                                                    HNode(8,'a', self.leaf_e, self.leaf_a),
+                                                                      HTLNode(self.leaf_c, None))))
+        self.assertRaises(ValueError, coalesce_once, self.tree_lst4)
 
     def test_coalesce_all(self):
-        self.assertEqual(coalesce_all(self.tree_lst1), HNode(22, 'a', self.tree_c,
-                                                          HNode( 12, 'a', self.tree_a, 
-                                                                self.tree_b)))
-        self.assertEqual(coalesce_all(self.tree_lst4), HNode(12, 'a', self.tree_a, self.tree_b))
-        self.assertEqual(coalesce_all(self.tree_lst3), HNode(36, 'a', 
-                                                             HNode(15, 'a', self.tree_b,
-                                                                    HNode(8, 'a', self.tree_e2, self.tree_a)),
-                                                                           HNode(21, 'c', self.tree_c, self.tree_d2)))
-        
+        self.assertEqual(coalesce_all(self.tree_lst1), HNode(12,'a', HLeaf(5,'a'), HLeaf(7,'b')))
+        self.assertEqual(coalesce_all(self.tree_lst2), HNode(23,'a', HLeaf(11,'d'), HNode(12,'a',
+                                                                                          HLeaf(5,'a'),
+                                                                                          HLeaf(7,'b'))))
+        self.assertEqual(coalesce_all(self.tree_lst3), HNode(25,'a', HLeaf(10,'c'), 
+                                                              HNode(15,'a', HLeaf(7,'b'),
+                                                                    HNode(8,'a', HLeaf(3,'e'), HLeaf(5,'a')))))
+        self.assertEqual(coalesce_all(self.tree_lst4), HLeaf(5,'a'))
+
     def test_build_encoder_array(self):
-        self.assertEqual(build_encoder_array(self.tree1)[97:100],['10','11','0'])
-        self.assertEqual(build_encoder_array(self.tree2)[97:99],['0','1'])
-        self.assertEqual(build_encoder_array(self.tree3)[97:102],['011','00','10','11','010'])
+       self.assertEqual(build_encoder_array(self.tree1)[97:100],['10','11','0'])
+       self.assertEqual(build_encoder_array(self.tree2)[97:99],['0','1'])
+       self.assertEqual(build_encoder_array(self.tree3)[97:102],['011','00','10','11','010'])
 
     def test_encode_string_one(self):
-        self.assertEqual(encode_string_one('ab', build_encoder_array(self.tree2)), '01')
-        self.assertEqual(encode_string_one('abc', build_encoder_array(self.tree1)), '10110')
-        self.assertEqual(encode_string_one('abcde', build_encoder_array(self.tree3)), '011001011010')
+       self.assertEqual(encode_string_one('ab', build_encoder_array(self.tree2)), '01')
+       self.assertEqual(encode_string_one('abc', build_encoder_array(self.tree1)), '10110')
+       self.assertEqual(encode_string_one('abcde', build_encoder_array(self.tree3)), '011001011010')
 
     def test_bits_to_bytes(self):
-        self.assertEqual(bits_to_bytes('01'), bytearray([64]))
-        self.assertEqual(bits_to_bytes('10110'), bytearray([176]))
-        self.assertEqual(bits_to_bytes('011001011010'), bytearray([101, 160]))
+       self.assertEqual(bits_to_bytes('01'), bytearray([64]))
+       self.assertEqual(bits_to_bytes('10110'), bytearray([176]))
+       self.assertEqual(bits_to_bytes('011001011010'), bytearray([101, 160]))
 
     def test_huffman_code_file(self):
-        with open("test_source.txt", "w", encoding = "utf-8") as file:
-            file.write("abcde")
-        huffman_code_file("test_source.txt", "test_target.bin")
-        with open("test_target.bin", "rb") as f:
-            data = f.read()
-        self.assertTrue(len(data) > 0)
+       with open("test_source.txt", "w", encoding = "utf-8") as file:
+           file.write("abcde")
+       huffman_code_file("test_source.txt", "test_target.bin")
+       with open("test_target.bin", "rb") as f:
+           data = f.read()
+       self.assertTrue(len(data) > 0)
+
+    
+
 
 if (__name__ == '__main__'):
     unittest.main()
